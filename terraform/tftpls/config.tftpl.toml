@@ -1,0 +1,56 @@
+concurrent = 20
+check_interval = 0
+listen_address = ":9252"
+
+[[runners]]
+  name = "gitlab-aws-autoscaler"
+  url = "${gitlab.url}"
+  token = $${RUNNER_TOKEN}
+  executor = "docker+machine"
+  limit = 20
+  [runners.docker]
+    tls_verify = false
+    image = "alpine"
+    privileged = false
+  [runners.cache]
+    Type = "s3"
+    Shared = true
+    Path = "runner"
+    volumes = [
+      "/var/run/docker.sock:/var/run/docker.sock",
+    ]
+    [runners.cache.s3]
+      ServerAddress = "s3.amazonaws.com"
+      AuthenticationType = "iam"
+      BucketName = "${gitlab.runner.s3.bucket_name}"
+      BucketLocation = "${gitlab.runner.s3.bucket_location}"
+  [runners.machine]
+    IdleCount = 0
+    IdleTime = 1800
+    MaxBuilds = 100
+    MachineDriver = "amazonec2"
+    MachineName = "gitlab-docker-machine-%s"
+    MachineOptions = [
+      "amazonec2-region=${gitlab.runner.machine.aws_region}",
+      "amazonec2-vpc-id=${gitlab.runner.machine.vpc_id}",
+      "amazonec2-subnet-id=${gitlab.runner.machine.subnet_id}",
+      "amazonec2-use-private-address=true",
+      "amazonec2-private-address-only=true",
+      "amazonec2-tags=${gitlab.runner.machine.ec2_tags}",
+      "amazonec2-security-group=${gitlab.runner.machine.security_group_name}",
+      "amazonec2-instance-type=${gitlab.runner.machine.instance_type}",
+      "amazonec2-ami=${gitlab.runner.machine.ami}",
+      "amazonec2-request-spot-instance=true",
+      "amazonec2-spot-price=",
+      "amazonec2-iam-instance-profile=${gitlab.runner.machine.instance_profile}",
+    ]
+    [[runners.machine.autoscaling]]
+      Periods = ["* * 9-17 * * mon-fri *"]
+      IdleCount = 2
+      IdleTime = 3600
+      Timezone = "Asia/Tokyo"
+    [[runners.machine.autoscaling]]
+      Periods = ["* * * * * sat,sun *"]
+      IdleCount = 0
+      IdleTime = 1800
+      Timezone = "Asia/Tokyo"

@@ -1,0 +1,33 @@
+services:
+  gitlab:
+    image: gitlab/gitlab-ee:latest
+    restart: always
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./data/gitlab/config:/etc/gitlab
+      - ./data/gitlab/logs:/var/log/gitlab
+      - ./data/gitlab/data:/var/opt/gitlab
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url '${gitlab.url}'
+
+        # For monitoring
+        grafana['enable'] = true
+        grafana['disable_login_form'] = false
+        grafana['admin_password'] = 'admin'
+        prometheus['scrape_configs'] = [
+          {
+            'job_name': 'gitlab-runner',
+            'static_configs' => [
+              'targets' => ['gitlab-runner:9252'],
+            ],
+          },
+        ]
+  gitlab-runner:
+    build:
+      dockerfile: ./gitlab-runner-docker-machine.dockerfile
+    volumes:
+      - ./data/gitlab-runner:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
