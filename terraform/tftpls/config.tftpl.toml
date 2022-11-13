@@ -46,7 +46,9 @@ listen_address = ":9252"
     ]
     [[runners.machine.autoscaling]]
       Periods = ["* * 9-17 * * mon-fri *"]
-      IdleCount = 2
+      IdleCount = 10
+      IdleCountMin = 2
+      IdleScaleFactor = 0.5
       IdleTime = 3600
       Timezone = "Asia/Tokyo"
     [[runners.machine.autoscaling]]
